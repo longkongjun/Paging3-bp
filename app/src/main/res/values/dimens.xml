@@ -1,0 +1,8 @@
+<resources>
+    <dimen name="list_horizontal_padding">16dp</dimen>
+    <dimen name="list_item_spacing">12dp</dimen>
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="avatar_size">72dp</dimen>
+    <dimen name="toolbar_elevation">4dp</dimen>
+</resources>
