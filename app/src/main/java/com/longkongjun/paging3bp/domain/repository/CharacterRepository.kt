@@ -6,4 +6,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface CharacterRepository {
     fun getCharacters(): Flow<PagingData<Character>>
+    suspend fun refreshCharacters(ids: List<Long>)
+    fun getCharactersNetworkOnly(): Flow<PagingData<Character>>
 }

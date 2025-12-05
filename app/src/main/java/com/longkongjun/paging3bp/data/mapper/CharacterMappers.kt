@@ -27,3 +27,15 @@ fun CharacterEntity.toDomain(): Character = Character(
     location = locationName,
     createdAt = createdAt
 )
+
+fun CharacterDto.toDomain(): Character = Character(
+    id = id,
+    name = name,
+    status = status,
+    species = species,
+    gender = gender,
+    imageUrl = image,
+    origin = origin.name,
+    location = location.name,
+    createdAt = createdAt
+)

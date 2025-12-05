@@ -8,4 +8,11 @@
     <string name="character_meta_format">%1$s · %2$s</string>
     <string name="origin_label">起源：%1$s</string>
     <string name="location_label">位置：%1$s</string>
+    <string name="partial_refresh">局部刷新</string>
+    <string name="partial_refreshing">局部刷新中...</string>
+    <string name="partial_refresh_success">已刷新 %1$d 条内容</string>
+    <string name="partial_refresh_failed">局部刷新失败：%1$s</string>
+    <string name="partial_refresh_no_items">当前没有可刷新项</string>
+    <string name="network_mode_title">纯网络模式</string>
+    <string name="open_network_mode">进入纯网络模式</string>
 </resources>

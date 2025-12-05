@@ -1,5 +1,6 @@
 package com.longkongjun.paging3bp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -11,11 +12,15 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.longkongjun.paging3bp.databinding.ActivityMainBinding
 import com.longkongjun.paging3bp.ui.adapter.CharacterAdapter
 import com.longkongjun.paging3bp.ui.adapter.CharacterLoadStateAdapter
 import com.longkongjun.paging3bp.ui.components.VerticalSpaceItemDecoration
+import com.longkongjun.paging3bp.ui.NetworkOnlyActivity
 import com.longkongjun.paging3bp.ui.viewmodel.CharacterViewModel
+import com.longkongjun.paging3bp.ui.viewmodel.PartialRefreshEvent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -40,8 +45,11 @@ class MainActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
         setupSwipeRefresh()
+        setupPartialRefreshButton()
+        setupNetworkModeButton()
         collectPagingData()
         observeLoadStates()
+        observePartialRefresh()
     }
 
     private fun setupToolbar() {
@@ -67,6 +75,18 @@ class MainActivity : AppCompatActivity() {
         }
         binding.buttonStateAction.setOnClickListener {
             characterAdapter.retry()
+        }
+    }
+
+    private fun setupPartialRefreshButton() {
+        binding.buttonPartialRefresh.setOnClickListener {
+            refreshVisibleRange()
+        }
+    }
+
+    private fun setupNetworkModeButton() {
+        binding.buttonNetworkMode.setOnClickListener {
+            startActivity(Intent(this, NetworkOnlyActivity::class.java))
         }
     }
 
@@ -108,5 +128,72 @@ class MainActivity : AppCompatActivity() {
             headerAdapter.loadState = combinedLoadStates.prepend
             footerAdapter.loadState = combinedLoadStates.append
         }
+    }
+
+    private fun observePartialRefresh() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.partialRefreshEvents.collect { event ->
+                        when (event) {
+                            is PartialRefreshEvent.Success -> {
+                                showPartialRefreshMessage(
+                                    getString(R.string.partial_refresh_success, event.count)
+                                )
+                            }
+
+                            is PartialRefreshEvent.Failure -> {
+                                val reason = event.throwable.message ?: getString(R.string.load_failed)
+                                showPartialRefreshMessage(
+                                    getString(R.string.partial_refresh_failed, reason)
+                                )
+                            }
+
+                            PartialRefreshEvent.Empty -> {
+                                showPartialRefreshMessage(getString(R.string.partial_refresh_no_items))
+                            }
+                        }
+                    }
+                }
+
+                launch {
+                    viewModel.isPartialRefreshing.collect { isRefreshing ->
+                        binding.buttonPartialRefresh.isEnabled = !isRefreshing
+                        binding.buttonPartialRefresh.text = if (isRefreshing) {
+                            getString(R.string.partial_refreshing)
+                        } else {
+                            getString(R.string.partial_refresh)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun refreshVisibleRange() {
+        val layoutManager = binding.recyclerCharacters.layoutManager as? LinearLayoutManager
+            ?: return
+        val firstVisible = layoutManager.findFirstVisibleItemPosition()
+        val lastVisible = layoutManager.findLastVisibleItemPosition()
+
+        if (firstVisible == RecyclerView.NO_POSITION || lastVisible == RecyclerView.NO_POSITION) {
+            showPartialRefreshMessage(getString(R.string.partial_refresh_no_items))
+            return
+        }
+
+        val ids = (firstVisible..lastVisible).mapNotNull { position ->
+            characterAdapter.peek(position)?.id
+        }
+
+        if (ids.isEmpty()) {
+            showPartialRefreshMessage(getString(R.string.partial_refresh_no_items))
+            return
+        }
+
+        viewModel.refreshCharacters(ids)
+    }
+
+    private fun showPartialRefreshMessage(message: String) {
+        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
 }
